@@ -104,6 +104,9 @@ class MainApplication:
             self.flask_process.daemon = True
             self.flask_process.start()
             
+            # Небольшая задержка для запуска Flask
+            time.sleep(2)
+            
             # Запуск Telegram бота в отдельном процессе
             self.logger.info("Запуск Telegram бота...")
             self.bot_process = multiprocessing.Process(target=run_telegram_bot)
@@ -135,46 +138,6 @@ class MainApplication:
             self.logger.error(f"Ошибка при запуске приложения: {e}")
             self.stop()
             raise
-            Config.ensure_directories()
-            Config.print_config_info()
-            
-            self.logger.info("Запуск GetGems WebApp...")
-            self.running = True
-            
-            # Настройка обработчиков сигналов
-            signal.signal(signal.SIGINT, self.signal_handler)
-            signal.signal(signal.SIGTERM, self.signal_handler)
-            
-            # Запуск Flask сервера в отдельном процессе
-            self.logger.info("Создание процесса Flask сервера...")
-            self.flask_process = multiprocessing.Process(
-                target=run_flask_server,
-                name="FlaskServer"
-            )
-            self.flask_process.start()
-            
-            # Небольшая задержка для запуска Flask
-            time.sleep(2)
-            
-            # Запуск Telegram бота в отдельном процессе
-            self.logger.info("Создание процесса Telegram бота...")
-            self.bot_process = multiprocessing.Process(
-                target=run_telegram_bot,
-                name="TelegramBot"
-            )
-            self.bot_process.start()
-            
-            self.logger.info("Все компоненты запущены успешно!")
-            self.logger.info(f"Flask сервер доступен по адресу: http://{Config.FLASK_HOST}:{Config.FLASK_PORT}")
-            self.logger.info(f"Telegram бот: @{Config.BOT_USERNAME}")
-            
-            # Мониторинг процессов
-            self.monitor_processes()
-            
-        except Exception as e:
-            self.logger.error(f"Ошибка при запуске приложения: {e}")
-            self.stop()
-            sys.exit(1)
             
     def monitor_processes(self):
         """Мониторинг состояния процессов"""
