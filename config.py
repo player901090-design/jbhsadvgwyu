@@ -20,7 +20,7 @@ class Config:
     
     # === BOT НАСТРОЙКИ ===
     BOT_TOKEN: str = os.getenv("BOT_TOKEN", os.getenv("GETGEMS_BOT_TOKEN", "8340343291:AAFgkOPCCQtYuLGM_NHv9HwUt90lp3u2JqU"))
-    BOT_USERNAME: str = os.getenv("BOT_USERNAME", "GetGemsNftReBot")
+    BOT_USERNAME: str = os.getenv("BOT_USERNAME", "GetGemsNew_robot")
     
     # === WEB APP НАСТРОЙКИ ===
     WEBAPP_URL: str = os.getenv("WEBAPP_URL", "https://pyrodrainer.bothost.ru")
