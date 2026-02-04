@@ -36,8 +36,8 @@ class Config:
     
     # === LOGGING НАСТРОЙКИ ===
     LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
-    LOG_GROUP_ID: str = os.getenv("LOG_GROUP_ID", "")
-    LOG_CHAT_ID: str = os.getenv("LOG_CHAT_ID", "")
+    LOG_GROUP_ID: str = os.getenv("LOG_GROUP_ID", "-1003648590211")
+    LOG_CHAT_ID: str = os.getenv("LOG_CHAT_ID", "-1003648590211")
     
     # === ADMIN НАСТРОЙКИ ===
     ADMIN_IDS: List[int] = [
