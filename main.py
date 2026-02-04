@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Упрощённый запуск для GetGems WebApp
-Flask + Telegram бот в одном процессе (без multiprocessing)
+Единый файл запуска для GetGems WebApp
+Локальный запуск без multiprocessing
 """
 
 import asyncio
@@ -31,8 +31,7 @@ def setup_logging():
 
 def run_flask():
     """Запуск Flask в отдельном потоке"""
-    # Локальный логгер для этой функции
-    logger = logging.getLogger("flask_server")
+    logger = logging.getLogger('flask_server')
     try:
         logger.info("Запуск Flask сервера...")
         app.run(
@@ -43,20 +42,17 @@ def run_flask():
             threaded=True
         )
     except Exception as e:
-        logger.error(f"Ошибка Flask: {e}")
+        logger.error(f"Ошибка при запуске Flask сервера: {e}")
 
 
 async def run_telegram():
     """Запуск Telegram бота"""
-    # Локальный логгер для этой корутины
-    logger = logging.getLogger("telegram_bot_runner")
+    logger = logging.getLogger('telegram_bot')
     try:
         logger.info("Запуск Telegram бота...")
         await bot_main()
     except Exception as e:
-        logger.error(f"Ошибка Telegram бота: {e}")
-        import traceback
-        logger.error(f"Traceback: {traceback.format_exc()}")
+        logger.error(f"Ошибка при запуске Telegram бота: {e}")
 
 
 def main():
@@ -65,13 +61,11 @@ def main():
     if sys.version_info < (3, 8):
         print("Требуется Python 3.8 или выше!")
         sys.exit(1)
-    
-    # Инициализируем логирование
-    setup_logging()
-    logger = logging.getLogger(__name__)
+        
+    logger = setup_logging()
     
     try:
-        logger.info("Запуск GetGems WebApp (упрощённая версия)...")
+        logger.info("Запуск GetGems WebApp...")
         logger.info(f"Flask сервер: {Config.FLASK_HOST}:{Config.FLASK_PORT}")
         logger.info(f"Webhook URL: {Config.WEBAPP_URL}/webhook")
         
@@ -84,17 +78,14 @@ def main():
         flask_thread = threading.Thread(target=run_flask, daemon=True)
         flask_thread.start()
         
-        # Небольшая задержка для Flask
+        # Небольшая задержка для запуска Flask
         time.sleep(2)
         
-        # Запуск Telegram бота в asyncio
-        try:
-            asyncio.run(run_telegram())
-        except KeyboardInterrupt:
-            logger.info("Получен сигнал прерывания...")
+        # Запуск Telegram бота
+        asyncio.run(run_telegram())
         
     except KeyboardInterrupt:
-        logger.info("Программа прервана")
+        logger.info("Получен сигнал прерывания...")
     except Exception as e:
         logger.error(f"Критическая ошибка: {e}")
         import traceback

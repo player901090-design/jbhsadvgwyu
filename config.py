@@ -24,7 +24,7 @@ class Config:
     
     # === WEB APP НАСТРОЙКИ ===
     WEBAPP_URL: str = os.getenv("WEBAPP_URL", "https://pyrodrainer.bothost.ru")
-    SECRET_KEY: str = os.getenv("GETGEMS_SECRET_KEY", "your_secret_key_here")
+    SECRET_KEY: str = os.getenv("GETGEMS_SECRET_KEY", "76bf52976b5f7b6")
     
     # === FLASK НАСТРОЙКИ ===
     FLASK_HOST: str = os.getenv("FLASK_HOST", "0.0.0.0")
