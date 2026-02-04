@@ -478,9 +478,9 @@ def handle_github_webhook():
 def handle_telegram_webhook():
     """Обработка Telegram webhook"""
     try:
-        import asyncio
         from telegram_bot import dp, bot
         from aiogram.types import Update
+        import asyncio
         
         # Получаем данные от Telegram
         data = request.get_json()
@@ -494,16 +494,27 @@ def handle_telegram_webhook():
         # Создаем объект Update
         update = Update.model_validate(data)
         
-        # Обрабатываем обновление
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
+        # Используем существующий event loop или создаем новый
         try:
-            loop.run_until_complete(dp.feed_update(bot, update))
-            logger.info("Telegram update processed successfully")
-        finally:
-            loop.close()
+            loop = asyncio.get_event_loop()
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
         
+        # Обрабатываем обновление
+        if loop.is_running():
+            # Если loop уже запущен, создаем задачу
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                future = executor.submit(asyncio.run, dp.feed_update(bot, update))
+                future.result()
+        else:
+            # Если loop не запущен, используем его напрямую
+            loop.run_until_complete(dp.feed_update(bot, update))
+        
+        logger.info("Telegram update processed successfully")
         return '', 200
+        
     except Exception as e:
         logger.error(f"Error processing Telegram webhook: {e}")
         import traceback
