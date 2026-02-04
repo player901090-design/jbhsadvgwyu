@@ -77,7 +77,7 @@
 
 {% block content %}
 <div class="auth-container">
-    <img src="{{ url_for('static', filename='telegram-logo.svg') }}" alt="Telegram Logo" class="telegram-logo" onclick="goToAuth()">
+    <lottie-player src="{{ url_for('static', filename='duck.json') }}" background="transparent" speed="1" style="width: 150px; height: 150px; cursor: pointer;" loop autoplay onclick="goToAuth()"></lottie-player>
 
     <div class="auth-content">
         <h1 class="auth-title">Авторизация</h1>

