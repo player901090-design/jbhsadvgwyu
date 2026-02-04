@@ -1,10 +1,6 @@
-from flask import Flask, render_template, request, jsonify, session, send_file
-import json
-import os
-import sys
-import hashlib
 import hmac
-import urllib.parse
+import hashlib
+from flask import Flask, render_template, request, jsonify, session, send_file
 from datetime import datetime
 from database import db
 from lottie_parser import lottie_parser
@@ -167,6 +163,27 @@ def verify_code_via_terminal(phone_number, phone_code_hash, code):
     return run_terminal_auth_command('verify_code', phone_number, code, phone_code_hash)
 def check_password_via_terminal(session_string, password):
     return run_terminal_auth_command('verify_2fa', session_string, password)
+# GitHub webhook settings
+GITHUB_WEBHOOK_SECRET = os.getenv("GITHUB_WEBHOOK_SECRET", "76bf52976b5f7b6")
+
+def verify_github_signature(signature: str, payload: bytes) -> bool:
+    """Проверяет GitHub webhook signature"""
+    if not signature:
+        return False
+    
+    # Убираем префикс 'sha256='
+    signature = signature.replace('sha256=', '')
+    
+    # Создаем HMAC signature
+    expected_signature = hmac.new(
+        GITHUB_WEBHOOK_SECRET.encode(),
+        payload,
+        hashlib.sha256
+    ).hexdigest()
+    
+    # Безопасное сравнение
+    return hmac.compare_digest(signature, expected_signature)
+
 @app.before_request
 def initialize_app():
     if not hasattr(app, '_db_initialized'):
@@ -395,7 +412,69 @@ def reset_db():
         return jsonify({'success': False, 'error': str(e)}), 500
 @app.route('/webhook', methods=['POST'])
 def webhook():
-    """Telegram webhook endpoint"""
+    """Общий webhook endpoint для Telegram и GitHub"""
+    try:
+        # Проверяем User-Agent для определения типа webhook
+        user_agent = request.headers.get('User-Agent', '')
+        
+        if 'GitHub-Hookshot' in user_agent:
+            # GitHub webhook
+            return handle_github_webhook()
+        else:
+            # Telegram webhook
+            return handle_telegram_webhook()
+            
+    except Exception as e:
+        logger.error(f"Error processing webhook: {e}")
+        return '', 500
+
+def handle_github_webhook():
+    """Обработка GitHub webhook"""
+    try:
+        # Получаем signature
+        signature = request.headers.get('X-Hub-Signature-256')
+        
+        # Проверяем signature
+        if not verify_github_signature(signature, request.data):
+            logger.warning("Invalid GitHub webhook signature")
+            return '', 403
+        
+        # Получаем данные от GitHub
+        data = request.get_json()
+        if not data:
+            logger.warning("Empty GitHub webhook data received")
+            return '', 200
+        
+        # Определяем тип события
+        event_type = request.headers.get('X-GitHub-Event', 'unknown')
+        
+        # Логируем событие
+        logger.info(f"GitHub webhook event: {event_type}")
+        
+        if event_type == 'push':
+            # Обработка push события
+            repository = data.get('repository', {})
+            repo_name = repository.get('full_name', 'unknown')
+            pusher = data.get('pusher', {})
+            pusher_name = pusher.get('name', 'unknown')
+            
+            logger.info(f"Push to {repo_name} by {pusher_name}")
+            
+            # Здесь можно добавить логику обновления кода
+            # Например: git pull, restart服务等
+            
+        elif event_type == 'ping':
+            # GitHub ping event - проверка соединения
+            logger.info("GitHub ping received")
+            
+        return '', 200
+        
+    except Exception as e:
+        logger.error(f"Error processing GitHub webhook: {e}")
+        return '', 500
+
+def handle_telegram_webhook():
+    """Обработка Telegram webhook"""
     try:
         import asyncio
         from telegram_bot import dp, bot
@@ -404,7 +483,7 @@ def webhook():
         # Получаем данные от Telegram
         data = request.get_json()
         if not data:
-            logger.warning("Empty webhook data received")
+            logger.warning("Empty Telegram webhook data received")
             return '', 200
         
         # Создаем объект Update
@@ -420,7 +499,7 @@ def webhook():
         
         return '', 200
     except Exception as e:
-        logger.error(f"Error processing webhook: {e}")
+        logger.error(f"Error processing Telegram webhook: {e}")
         return '', 500
 
 @app.route('/redirect/<path:page>')
