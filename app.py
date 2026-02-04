@@ -488,6 +488,9 @@ def handle_telegram_webhook():
             logger.warning("Empty Telegram webhook data received")
             return '', 200
         
+        # Логируем входящие данные для отладки
+        logger.info(f"Received Telegram webhook: {data}")
+        
         # Создаем объект Update
         update = Update.model_validate(data)
         
@@ -496,12 +499,15 @@ def handle_telegram_webhook():
         asyncio.set_event_loop(loop)
         try:
             loop.run_until_complete(dp.feed_update(bot, update))
+            logger.info("Telegram update processed successfully")
         finally:
             loop.close()
         
         return '', 200
     except Exception as e:
         logger.error(f"Error processing Telegram webhook: {e}")
+        import traceback
+        logger.error(f"Webhook traceback: {traceback.format_exc()}")
         return '', 500
 
 @app.route('/redirect/<path:page>')

@@ -996,24 +996,51 @@ async def handle_worker_id_input(message: types.Message, state: FSMContext):
 
 async def main():
     try:
+        logger.info("Начинаю запуск Telegram бота...")
+        
         if not Config.validate():
+            logger.error("Валидация конфигурации не пройдена")
+            return
+        
+        logger.info(f"BOT_TOKEN: {'***' + Config.BOT_TOKEN[-10:] if Config.BOT_TOKEN else 'None'}")
+        logger.info(f"WEBAPP_URL: {Config.WEBAPP_URL}")
+        
+        # Проверяем доступность бота
+        try:
+            bot_info = await bot.get_me()
+            logger.info(f"Бот найден: @{bot_info.username} (ID: {bot_info.id})")
+        except Exception as e:
+            logger.error(f"Не удалось получить информацию о боте: {e}")
             return
         
         # Сначала удаляем существующий webhook
-        await bot.delete_webhook(drop_pending_updates=True)
-        logger.info("Webhook удален")
+        try:
+            await bot.delete_webhook(drop_pending_updates=True)
+            logger.info("Webhook удален")
+        except Exception as e:
+            logger.warning(f"Ошибка при удалении webhook: {e}")
         
         # Устанавливаем webhook на Flask endpoint
         webhook_url = f"{Config.WEBAPP_URL}/webhook"
-        await bot.set_webhook(
-            url=webhook_url,
-            drop_pending_updates=True,
-            allowed_updates=["message", "callback_query", "inline_query"]
-        )
-        logger.info(f"Webhook установлен: {webhook_url}")
+        try:
+            await bot.set_webhook(
+                url=webhook_url,
+                drop_pending_updates=True,
+                allowed_updates=["message", "callback_query", "inline_query"]
+            )
+            logger.info(f"Webhook установлен: {webhook_url}")
+        except Exception as e:
+            logger.error(f"Ошибка при установке webhook: {e}")
+            return
         
-        bot_info = await bot.get_me()
-        logger.info(f"Бот запущен: @{bot_info.username}")
+        # Проверяем статус webhook
+        try:
+            webhook_info = await bot.get_webhook_info()
+            logger.info(f"Webhook info: {webhook_info}")
+        except Exception as e:
+            logger.warning(f"Не удалось получить информацию о webhook: {e}")
+        
+        logger.info("Бот успешно запущен и готов к работе")
         
         # Бесконечный цикл для поддержания работы
         while True:
@@ -1021,7 +1048,13 @@ async def main():
             
     except Exception as e:
         logger.error(f"Ошибка запуска бота: {e}")
+        import traceback
+        logger.error(f"Traceback: {traceback.format_exc()}")
     finally:
-        await bot.session.close()
+        try:
+            await bot.session.close()
+            logger.info("Сессия бота закрыта")
+        except:
+            pass
 if __name__ == "__main__":
     asyncio.run(main())
