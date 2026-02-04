@@ -1,0 +1,40 @@
+# ===== Python =====
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+*.egg
+
+# ===== Виртуальные окружения =====
+.venv/
+venv/
+ENV/
+env/
+
+# ===== IDE / OS =====
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# ===== Логи =====
+*.log
+logs/
+main.log
+
+# ===== Базы данных =====
+*.sqlite3
+*.db
+getgems.db
+
+# ===== Сессии и временные файлы =====
+sessions/
+session_data.json
+phones.json
+
+# ===== Локальные конфиги и секреты =====
+.env
+.env.*
