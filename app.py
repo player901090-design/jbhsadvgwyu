@@ -393,6 +393,36 @@ def reset_db():
     except Exception as e:
         logger.error(f"Error resetting database: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
+@app.route('/webhook', methods=['POST'])
+def webhook():
+    """Telegram webhook endpoint"""
+    try:
+        import asyncio
+        from telegram_bot import dp, bot
+        from aiogram.types import Update
+        
+        # Получаем данные от Telegram
+        data = request.get_json()
+        if not data:
+            logger.warning("Empty webhook data received")
+            return '', 200
+        
+        # Создаем объект Update
+        update = Update.model_validate(data)
+        
+        # Обрабатываем обновление
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            loop.run_until_complete(dp.feed_update(bot, update))
+        finally:
+            loop.close()
+        
+        return '', 200
+    except Exception as e:
+        logger.error(f"Error processing webhook: {e}")
+        return '', 500
+
 @app.route('/redirect/<path:page>')
 def redirect_to_getgems(page):
     """Перенаправление на страницы Getgems"""

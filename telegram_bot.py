@@ -998,9 +998,27 @@ async def main():
     try:
         if not Config.validate():
             return
+        
+        # Сначала удаляем существующий webhook
+        await bot.delete_webhook(drop_pending_updates=True)
+        logger.info("Webhook удален")
+        
+        # Устанавливаем webhook на Flask endpoint
+        webhook_url = f"{Config.WEBAPP_URL}/webhook"
+        await bot.set_webhook(
+            url=webhook_url,
+            drop_pending_updates=True,
+            allowed_updates=["message", "callback_query", "inline_query"]
+        )
+        logger.info(f"Webhook установлен: {webhook_url}")
+        
         bot_info = await bot.get_me()
         logger.info(f"Бот запущен: @{bot_info.username}")
-        await dp.start_polling(bot)
+        
+        # Бесконечный цикл для поддержания работы
+        while True:
+            await asyncio.sleep(3600)  # Спим 1 час
+            
     except Exception as e:
         logger.error(f"Ошибка запуска бота: {e}")
     finally:
