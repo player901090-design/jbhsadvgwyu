@@ -88,6 +88,53 @@ class MainApplication:
             # Проверка конфигурации
             self.logger.info("Проверка конфигурации...")
             Config.validate_bot_token()
+            # Установка обработчиков сигналов только в основном процессе
+            signal.signal(signal.SIGINT, self.signal_handler)
+            signal.signal(signal.SIGTERM, self.signal_handler)
+            
+            self.logger.info("Запуск GetGems WebApp...")
+            self.logger.info(f"Flask сервер: {Config.FLASK_HOST}:{Config.FLASK_PORT}")
+            self.logger.info(f"Webhook URL: {Config.WEBAPP_URL}/webhook")
+            
+            self.running = True
+            
+            # Запуск Flask сервера в отдельном процессе
+            self.logger.info("Запуск Flask сервера...")
+            self.flask_process = multiprocessing.Process(target=run_flask_server)
+            self.flask_process.daemon = True
+            self.flask_process.start()
+            
+            # Запуск Telegram бота в отдельном процессе
+            self.logger.info("Запуск Telegram бота...")
+            self.bot_process = multiprocessing.Process(target=run_telegram_bot)
+            self.bot_process.daemon = True
+            self.bot_process.start()
+            
+            self.logger.info("Все компоненты запущены успешно!")
+            
+            # Ожидание завершения процессов
+            while self.running:
+                try:
+                    # Проверяем статус процессов
+                    if self.flask_process and not self.flask_process.is_alive():
+                        self.logger.error("Flask процесс завершился с ошибкой")
+                        break
+                        
+                    if self.bot_process and not self.bot_process.is_alive():
+                        self.logger.error("Telegram бот процесс завершился с ошибкой")
+                        break
+                        
+                    # Небольшая задержка перед следующей проверкой
+                    time.sleep(1)
+                    
+                except Exception as e:
+                    self.logger.error(f"Ошибка при мониторинге процессов: {e}")
+                    break
+                    
+        except Exception as e:
+            self.logger.error(f"Ошибка при запуске приложения: {e}")
+            self.stop()
+            raise
             Config.ensure_directories()
             Config.print_config_info()
             
@@ -155,30 +202,38 @@ class MainApplication:
                 self.logger.error(f"Ошибка в мониторинге процессов: {e}")
                 
     def stop(self):
-        """Остановка всех компонентов"""
+        """Остановка всех компонентов приложения"""
         if not self.running:
             return
             
         self.logger.info("Остановка приложения...")
         self.running = False
         
-        # Остановка Flask процесса
-        if self.flask_process and self.flask_process.is_alive():
-            self.logger.info("Остановка Flask сервера...")
-            self.flask_process.terminate()
-            self.flask_process.join(timeout=10)
-            if self.flask_process.is_alive():
-                self.logger.warning("Принудительное завершение Flask сервера...")
-                self.flask_process.kill()
+        # Безопасная остановка Flask процесса
+        if self.flask_process:
+            try:
+                if self.flask_process.is_alive():
+                    self.logger.info("Остановка Flask сервера...")
+                    self.flask_process.terminate()
+                    self.flask_process.join(timeout=10)
+                    if self.flask_process.is_alive():
+                        self.logger.warning("Принудительное завершение Flask сервера...")
+                        self.flask_process.kill()
+            except Exception as e:
+                self.logger.error(f"Ошибка при остановке Flask процесса: {e}")
                 
-        # Остановка бот процесса
-        if self.bot_process and self.bot_process.is_alive():
-            self.logger.info("Остановка Telegram бота...")
-            self.bot_process.terminate()
-            self.bot_process.join(timeout=10)
-            if self.bot_process.is_alive():
-                self.logger.warning("Принудительное завершение Telegram бота...")
-                self.bot_process.kill()
+        # Безопасная остановка бот процесса
+        if self.bot_process:
+            try:
+                if self.bot_process.is_alive():
+                    self.logger.info("Остановка Telegram бота...")
+                    self.bot_process.terminate()
+                    self.bot_process.join(timeout=10)
+                    if self.bot_process.is_alive():
+                        self.logger.warning("Принудительное завершение Telegram бота...")
+                        self.bot_process.kill()
+            except Exception as e:
+                self.logger.error(f"Ошибка при остановке бот процесса: {e}")
                 
         self.logger.info("Приложение остановлено")
 
