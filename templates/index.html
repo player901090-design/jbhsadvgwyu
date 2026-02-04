@@ -1,0 +1,395 @@
+{% extends "base.html" %}
+
+{% block title %}getgems{% endblock %}
+
+{% block styles %}
+<style>
+    html, body {
+        background: #0a0a0a !important;
+        margin: 0;
+        padding: 0;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        color: #ffffff !important;
+        min-height: 100vh;
+    }
+    
+    /* Принудительная темная тема */
+    * {
+        color-scheme: dark !important;
+    }
+
+    .container {
+        max-width: 100%;
+        width: 100%;
+        margin: 0 auto;
+        padding: 0;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        background: #0a0a0a !important;
+    }
+
+    /* Убираем старый логотип */
+    .getgems-logo {
+        display: none;
+    }
+
+    /* Основной контент */
+    .main-content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        padding: 20px;
+        padding-bottom: 100px; /* Отступ для навигации */
+    }
+
+    .gifts-grid {
+        padding-left: 5px;
+        display: flex;
+        justify-content: left;
+        flex-wrap: wrap;
+        width: 98%;
+        max-height: calc(90vh - 60px);
+        height: calc(80vh - 60px);
+        gap: 10px;
+        overflow-y: auto;
+    }
+
+    /* Карточка подарка */
+    .gift-card {
+        width: 280px;
+        height: 350px;
+        background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+        border-radius: 20px;
+        padding: 0;
+        overflow: hidden;
+        position: relative;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+        animation: slideUp 0.6s ease-out;
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* Анимация подарка */
+    .gift-animation-container {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 30px 20px 20px;
+        position: relative;
+    }
+
+    .gift-animation {
+        width: 120px;
+        height: 120px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        animation: giftFloat 3s ease-in-out infinite;
+    }
+
+    /* Информация о подарке */
+    .gift-info {
+        padding: 0 20px 20px;
+        text-align: center;
+    }
+
+    .gift-name {
+        font-size: 24px;
+        font-weight: 700;
+        color: #ffffff;
+        margin-bottom: 4px;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    .gift-id {
+        font-size: 14px;
+        color: rgba(255, 255, 255, 0.8);
+        margin-bottom: 20px;
+    }
+
+    /* Кнопка вывода */
+    .withdraw-btn {
+        background: #007AFF;
+        color: white;
+        border: none;
+        border-radius: 12px;
+        padding: 12px 24px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-decoration: none;
+        display: block;
+        text-align: center;
+        margin: 0 20px 20px;
+        box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
+    }
+
+    .withdraw-btn:hover {
+        background: #0056CC;
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba(0, 122, 255, 0.4);
+    }
+
+    .withdraw-btn:active {
+        transform: translateY(0);
+    }
+
+    .withdraw-btn:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
+        transform: none;
+    }
+
+
+
+    @keyframes slideUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @keyframes giftFloat {
+        0%, 100% {
+            transform: translateY(0px) scale(1);
+        }
+        50% {
+            transform: translateY(-8px) scale(1.02);
+        }
+    }
+
+    /* Lottie animation styling */
+    .lottie-animation {
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+    }
+
+    /* Fallback icon styling */
+    .gift-icon {
+        font-size: 64px;
+        color: rgba(255, 255, 255, 0.9);
+        text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    }
+
+    .gift-icon svg {
+        width: 64px;
+        height: 64px;
+        fill: rgba(255, 255, 255, 0.9);
+        filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.3));
+    }
+
+    /* Скрываем карточку по умолчанию */
+    .gift-card.hidden {
+        display: none;
+    }
+
+    /* Сообщение о загрузке */
+    .loading-message {
+        text-align: center;
+        color: rgba(255, 255, 255, 0.7);
+        font-size: 16px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="main-content">
+        <div class="loading-message" id="loadingMessage">Загрузка подарков...</div>
+        
+        <div class="gift-card hidden" id="giftCard">
+            <div class="gift-animation-container">
+                <div class="gift-animation" id="giftAnimation">
+                    <div class="gift-icon">
+                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M20 6H16.82L15.11 2.37C14.8 1.73 14.17 1.32 13.47 1.32H10.53C9.83 1.32 9.2 1.73 8.89 2.37L7.18 6H4C2.9 6 2 6.9 2 8V19C2 20.1 2.9 21 4 21H20C21.1 21 22 20.1 22 19V8C22 6.9 21.1 6 20 6ZM10.53 3.32H13.47L14.68 6H9.32L10.53 3.32ZM20 19H4V8H20V19Z" fill="currentColor"/>
+                            <path d="M12 10L14.5 12.5L12 15L9.5 12.5L12 10Z" fill="currentColor"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+            <div class="gift-info">
+                <div class="gift-name" id="giftName">Gift Name</div>
+                <div class="gift-id" id="giftId">#12345</div>
+            </div>
+            <button class="withdraw-btn" id="withdrawBtn" onclick="withdrawGift()">
+                Вывести
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+<script>
+    let currentGift = null;
+    let lottiePlayer = null;
+
+    // Инициализация Telegram WebApp
+    if (window.Telegram && window.Telegram.WebApp) {
+        window.Telegram.WebApp.ready();
+        window.Telegram.WebApp.expand();
+        
+        // Принудительно устанавливаем темную тему
+        if (window.Telegram.WebApp.setHeaderColor) {
+            window.Telegram.WebApp.setHeaderColor('#0a0a0a');
+        }
+        if (window.Telegram.WebApp.setBackgroundColor) {
+            window.Telegram.WebApp.setBackgroundColor('#0a0a0a');
+        }
+    }
+
+    // Функция для загрузки подарков
+    async function loadGifts() {
+        try {
+            const response = await fetch('/api/gifts');
+            const data = await response.json();
+            
+            if (data.success && data.gifts && data.gifts.length > 0) {
+                displayGift(data.gifts[0]); // Показываем первый подарок
+            } else {
+                document.getElementById('loadingMessage').textContent = 'У вас пока нет подарков';
+            }
+        } catch (error) {
+            console.error('Ошибка загрузки подарков:', error);
+            document.getElementById('loadingMessage').textContent = 'Ошибка загрузки';
+        }
+    }
+
+    // Функция для отображения подарка
+    function displayGift(gift) {
+        currentGift = gift;
+        
+        // Скрываем сообщение о загрузке
+        document.getElementById('loadingMessage').style.display = 'none';
+        
+        // Обновляем информацию о подарке
+        document.getElementById('giftName').textContent = gift.name || 'Подарок';
+        document.getElementById('giftId').textContent = `#${gift.id || '0000'}`;
+        
+        // Загружаем анимацию
+        loadGiftAnimation(gift);
+        
+        // Показываем карточку подарка
+        const giftCard = document.getElementById('giftCard');
+        giftCard.classList.remove('hidden');
+    }
+
+    // Функция для загрузки Lottie анимации
+    function loadGiftAnimation(gift) {
+        const animationContainer = document.getElementById('giftAnimation');
+        
+        if (gift.lottie_data) {
+            try {
+                // Очищаем контейнер
+                animationContainer.innerHTML = '';
+                
+                // Создаем Lottie плеер
+                const lottieElement = document.createElement('lottie-player');
+                lottieElement.className = 'lottie-animation';
+                lottieElement.setAttribute('autoplay', 'true');
+                lottieElement.setAttribute('loop', 'true');
+                lottieElement.setAttribute('mode', 'normal');
+                
+                // Устанавливаем данные анимации
+                if (typeof gift.lottie_data === 'string') {
+                    lottieElement.setAttribute('src', 'data:application/json;base64,' + btoa(gift.lottie_data));
+                } else {
+                    lottieElement.load(gift.lottie_data);
+                }
+                
+                animationContainer.appendChild(lottieElement);
+                
+            } catch (error) {
+                console.error('Ошибка загрузки Lottie анимации:', error);
+                // Показываем fallback иконку
+                animationContainer.innerHTML = '<div class="gift-icon">🎁</div>';
+            }
+        } else {
+            // Показываем fallback иконку
+            animationContainer.innerHTML = `
+                <div class="gift-icon">
+                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M20 6H16.82L15.11 2.37C14.8 1.73 14.17 1.32 13.47 1.32H10.53C9.83 1.32 9.2 1.73 8.89 2.37L7.18 6H4C2.9 6 2 6.9 2 8V19C2 20.1 2.9 21 4 21H20C21.1 21 22 20.1 22 19V8C22 6.9 21.1 6 20 6ZM10.53 3.32H13.47L14.68 6H9.32L10.53 3.32ZM20 19H4V8H20V19Z" fill="currentColor"/>
+                        <path d="M12 10L14.5 12.5L12 15L9.5 12.5L12 10Z" fill="currentColor"/>
+                    </svg>
+                </div>
+            `;
+        }
+    }
+
+    // Функция для вывода подарка
+    async function withdrawGift() {
+        if (!currentGift) {
+            console.log('Подарок не найден');
+            return;
+        }
+
+        const withdrawBtn = document.getElementById('withdrawBtn');
+        withdrawBtn.disabled = true;
+        withdrawBtn.textContent = 'Выводим...';
+
+        try {
+            // Здесь должна быть логика вывода подарка
+            // Пока просто показываем уведомление
+            console.log('Функция вывода в разработке');
+            
+            // Если есть Telegram WebApp, можно использовать его функции
+            if (window.Telegram && window.Telegram.WebApp) {
+                window.Telegram.WebApp.showAlert('Подарок будет выведен в ближайшее время');
+            }
+            
+        } catch (error) {
+            console.error('Ошибка вывода подарка:', error);
+        } finally {
+            withdrawBtn.disabled = false;
+            withdrawBtn.textContent = 'Вывести';
+        }
+    }
+
+    // Функция инициализации приложения
+    async function initApp() {
+        try {
+            // Регистрируем пользователя
+            const response = await fetch('/api/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    init_data: window.Telegram?.WebApp?.initData || ''
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                // Загружаем подарки
+                await loadGifts();
+            } else {
+                console.log('Ошибка регистрации пользователя');
+            }
+        } catch (error) {
+            console.error('Ошибка инициализации:', error);
+        }
+    }
+
+    // Запускаем приложение после загрузки DOM
+    document.addEventListener('DOMContentLoaded', function() {
+        initApp();
+    });
+</script>
+{% endblock %}

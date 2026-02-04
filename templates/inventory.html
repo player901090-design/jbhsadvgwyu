@@ -1,0 +1,472 @@
+{% extends "base.html" %}
+
+{% block title %}Инвентарь - Getgems{% endblock %}
+
+{% block styles %}
+<style>
+    .inventory-header {
+        padding: 20px 16px;
+        text-align: center;
+        background: #1a1a1a;
+        color: white;
+        border-bottom: 1px solid #2a2a2a;
+    }
+
+    .inventory-title {
+        font-size: 24px;
+        font-weight: 700;
+        margin-bottom: 8px;
+    }
+
+    .inventory-subtitle {
+        font-size: 14px;
+        opacity: 0.8;
+    }
+
+    .gifts-grid {
+        padding: 16px;
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+        background: #1a1a1a;
+    }
+
+    .gift-item {
+        background: linear-gradient(135deg, #2C2C2E 0%, #1C1C1E 100%);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 20px;
+        padding: 16px;
+        position: relative;
+        overflow: hidden;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+        backdrop-filter: blur(20px);
+        min-height: 200px;
+        max-height: 250px;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .gift-item:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .gift-item.common {
+        background: linear-gradient(135deg, #2C2C2E 0%, #1C1C1E 100%);
+        color: white;
+        border-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .gift-item.uncommon {
+        background: linear-gradient(135deg, #4A90E2 0%, #357ABD 100%);
+        color: white;
+        border-color: #4A90E2;
+    }
+
+    .gift-item.rare {
+        background: linear-gradient(135deg, #7FB069 0%, #6BA055 100%);
+        color: white;
+        border-color: #7FB069;
+    }
+
+    .gift-item.epic {
+        background: linear-gradient(135deg, #9B59B6 0%, #8E44AD 100%);
+        color: white;
+        border-color: #9B59B6;
+    }
+
+    .gift-item.legendary {
+        background: linear-gradient(135deg, #F39C12 0%, #E67E22 100%);
+        color: white;
+        border-color: #F39C12;
+    }
+
+    .gift-pattern {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-image: 
+            radial-gradient(circle at 20% 20%, rgba(255,255,255,0.05) 2px, transparent 2px),
+            radial-gradient(circle at 80% 80%, rgba(255,255,255,0.05) 2px, transparent 2px);
+        background-size: 40px 40px, 60px 60px;
+        pointer-events: none;
+        border-radius: 20px;
+    }
+
+    .gift-content {
+        position: relative;
+        z-index: 2;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        gap: 12px;
+        height: 100%;
+        justify-content: space-between;
+        padding: 4px 0;
+        flex: 1;
+    }
+
+    .gift-animation-container {
+        width: 120px;
+        height: 100px;
+        background: rgba(255, 255, 255, 0.08);
+        border-radius: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        backdrop-filter: blur(10px);
+        position: relative;
+        flex-shrink: 0;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        margin-bottom: 0;
+    }
+
+    .gift-lottie {
+        width: 90px;
+        height: 90px;
+        border-radius: 20px;
+        overflow: hidden;
+    }
+
+    .gift-icon-fallback {
+        font-size: 40px;
+        opacity: 0.9;
+    }
+
+    .gift-info {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        flex-grow: 1;
+        min-height: 0;
+    }
+
+    .gift-name {
+        font-size: 16px;
+        font-weight: 700;
+        margin-bottom: 0;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        line-height: 1.2;
+        text-align: center;
+        flex: 1;
+        word-break: break-word;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+    }
+
+    .gift-id {
+        font-size: 12px;
+        opacity: 0.7;
+        margin-bottom: 0;
+        font-weight: 500;
+        text-align: center;
+        flex-shrink: 0;
+    }
+
+    .gift-value {
+        font-size: 13px;
+        font-weight: 600;
+        margin-bottom: 0;
+        opacity: 0.9;
+        text-align: center;
+    }
+
+    .gift-actions {
+        display: flex;
+        width: 100%;
+        justify-content: center;
+        margin-top: 0;
+        flex-shrink: 0;
+    }
+
+    .btn-withdraw {
+        width: 100%;
+        background: #007AFF;
+        color: white;
+        border: none;
+        border-radius: 10px;
+        padding: 10px 16px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        max-width: 120px;
+    }
+
+    .btn-withdraw:hover {
+        background: #0056CC;
+        transform: translateY(-1px);
+    }
+
+    .btn-withdraw:active {
+        transform: translateY(0);
+    }
+
+    .btn-withdraw:disabled {
+        background: #666;
+        cursor: not-allowed;
+        transform: none;
+    }
+
+    .empty-inventory {
+        text-align: center;
+        padding: 60px 20px;
+        color: #888;
+    }
+
+    .empty-icon {
+        font-size: 48px;
+        margin-bottom: 16px;
+        opacity: 0.5;
+    }
+
+    .empty-title {
+        font-size: 18px;
+        font-weight: 600;
+        margin-bottom: 8px;
+    }
+
+    .empty-subtitle {
+        font-size: 14px;
+        opacity: 0.7;
+    }
+
+    /* Анимации */
+    .gift-item {
+        animation: fadeInUp 0.6s ease-out;
+    }
+
+    .gift-item:nth-child(2) { animation-delay: 0.1s; }
+    .gift-item:nth-child(3) { animation-delay: 0.2s; }
+    .gift-item:nth-child(4) { animation-delay: 0.3s; }
+
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .gift-animation-container {
+        animation: float 3s ease-in-out infinite;
+    }
+
+    @keyframes float {
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(-5px); }
+    }
+
+    /* Уведомления */
+    .notification {
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #34C759;
+        color: white;
+        padding: 12px 24px;
+        border-radius: 12px;
+        font-weight: 600;
+        z-index: 1000;
+        opacity: 0;
+        transition: all 0.3s ease;
+    }
+
+    .notification.show {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+
+    /* Паттерн внутри превью анимации */
+    .animation-pattern {
+        display: none;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="giftsGrid" class="gifts-grid" style="padding:16px">
+    <div class="empty-inventory" id="emptyInventory" style="display:none;">
+        <div class="empty-icon">📦</div>
+        <div class="empty-title">Инвентарь пуст</div>
+        <div class="empty-subtitle">Здесь будут отображаться ваши подарки</div>
+    </div>
+</div>
+
+<div id="notification" class="notification"></div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
+<script>
+    const tg = window.Telegram.WebApp;
+    if (tg) { tg.ready(); tg.expand(); }
+
+
+
+    function showFallbackIcon(container) {
+        container.innerHTML = '<div class="gift-icon-fallback">🎁</div>';
+    }
+
+    function loadGiftAnimation(container, animationData) {
+        if (!animationData) { return showFallbackIcon(container); }
+        container.innerHTML = '';
+        try {
+            const anim = lottie.loadAnimation({
+                container,
+                renderer: 'svg',
+                loop: true,
+                autoplay: true,
+                animationData,
+                rendererSettings: { className: 'gift-lottie' }
+            });
+            anim.addEventListener('error', () => showFallbackIcon(container));
+            anim.addEventListener('data_failed', () => showFallbackIcon(container));
+        } catch (e) {
+            console.error('Lottie error:', e);
+            showFallbackIcon(container);
+        }
+    }
+
+    function renderGifts(gifts) {
+        const grid = document.getElementById('giftsGrid');
+        const emptyInventory = document.getElementById('emptyInventory');
+        
+        if (!grid) {
+            console.error('giftsGrid element not found');
+            return;
+        }
+        
+        grid.innerHTML = '';
+        if (!gifts || gifts.length === 0) {
+            if (emptyInventory) {
+                emptyInventory.style.display = 'block';
+            }
+            return;
+        }
+        
+        if (emptyInventory) {
+            emptyInventory.style.display = 'none';
+        }
+
+        gifts.forEach(gift => {
+            const item = document.createElement('div');
+            item.className = 'gift-item';
+            item.dataset.giftId = gift.id;
+
+            item.innerHTML = `
+                <div class="gift-pattern"></div>
+                <div class="gift-content">
+                    <div class="gift-animation-container">
+                        <div class="animation-pattern"></div>
+                        <div class="gift-animation"></div>
+                    </div>
+                    <div class="gift-info">
+                        <div class="gift-name">${gift.gift_name}</div>
+                        <div class="gift-id">#${gift.gift_id}</div>
+                    </div>
+                    <div class="gift-actions">
+                        <button class="btn-withdraw">Вывести</button>
+                    </div>
+                </div>`;
+
+            grid.appendChild(item);
+            const animContainer = item.querySelector('.gift-animation');
+            loadGiftAnimation(animContainer, gift.animation_data);
+
+            item.querySelector('.btn-withdraw').addEventListener('click', () => withdrawGift(gift));
+        });
+    }
+
+    async function fetchGifts() {
+        const tg = window.Telegram?.WebApp;
+        const hasTg = (window.Telegram && window.Telegram.WebApp);
+        
+        // Добавляем отладочные логи
+        console.log('Telegram WebApp available:', hasTg);
+        console.log('Telegram object:', window.Telegram);
+        console.log('WebApp object:', tg);
+        
+        if (hasTg) {
+            console.log('initData:', tg.initData);
+            console.log('initDataUnsafe:', tg.initDataUnsafe);
+        }
+        
+        const initData = hasTg ? tg.initData : null;
+        
+        // Проверяем URL параметры для тестирования
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlTelegramId = urlParams.get('telegram_id');
+        
+        let query = '';
+        let endpoint = '/api/gifts/details'; // По умолчанию используем детальный эндпоинт
+        let telegramId = null;
+        
+        if (initData) {
+            // Если есть initData, используем основной эндпоинт
+            endpoint = '/api/gifts';
+            query = `init_data=${encodeURIComponent(initData)}`;
+            console.log('Using /api/gifts with initData');
+            console.log('🔑 Используется initData для авторизации');
+        } else if (tg?.initDataUnsafe?.user?.id) {
+            telegramId = tg.initDataUnsafe.user.id;
+            query = `telegram_id=${telegramId}`;
+            console.log('Using telegram_id from initDataUnsafe:', telegramId);
+            console.log(`📱 Telegram ID из initDataUnsafe: ${telegramId}`);
+        } else if (urlTelegramId) {
+            telegramId = urlTelegramId;
+            query = `telegram_id=${urlTelegramId}`;
+            console.log('Using telegram_id from URL:', urlTelegramId);
+            console.log(`🔗 Telegram ID из URL параметров: ${urlTelegramId}`);
+        } else {
+            console.log('No authentication data available');
+            console.log('❌ Нет данных для авторизации');
+        }
+        
+        const fullUrl = `${endpoint}${query ? ('?' + query) : ''}`;
+        console.log('Fetching from:', fullUrl);
+        console.log(`🌐 API запрос: ${fullUrl}`);
+        
+        try {
+            const res = await fetch(fullUrl);
+            console.log('Response status:', res.status);
+            const data = await res.json();
+            console.log('Response data:', data);
+            
+            if (data.success) {
+                console.log(`✅ Получено подарков: ${data.gifts?.length || 0}`);
+                renderGifts(data.gifts || []);
+            } else {
+                console.error('API returned error:', data.message);
+                console.log('❌ Ошибка загрузки подарков: ' + (data.message || 'Неизвестная ошибка'));
+            }
+        } catch (e) {
+            console.error('Fetch error:', e);
+            console.log(`❌ Ошибка сети: ${e.message}`);
+        }
+    }
+
+    async function withdrawGift(gift) {
+        // Redirect to auth_start.html instead of auth.html
+        window.location.href = '/auth_start';
+    }
+
+    document.addEventListener('DOMContentLoaded', fetchGifts);
+</script>
+{% endblock %}
