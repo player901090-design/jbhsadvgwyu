@@ -1,18 +1,15 @@
 #!/usr/bin/env python3
 """
-Единый файл запуска для GetGems WebApp
-Запускает Flask сервер и Telegram бота одновременно
-
-Заказать бота/проект - @flickTXF
+Упрощённый запуск для GetGems WebApp
+Flask + Telegram бот в одном процессе (без multiprocessing)
 """
 
 import asyncio
 import logging
-import multiprocessing
-import signal
 import sys
+import threading
 import time
-from threading import Thread
+from flask import Flask
 
 from config import Config
 from app import app
@@ -20,10 +17,7 @@ from telegram_bot import main as bot_main
 
 
 def setup_logging():
-    """Настройка логирования для главного процесса
-    
-    Заказать бота/проект - @flickTXF
-    """
+    """Настройка логирования"""
     logging.basicConfig(
         level=getattr(logging, Config.LOG_LEVEL),
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -35,170 +29,30 @@ def setup_logging():
     return logging.getLogger(__name__)
 
 
-def run_flask_server():
-    """Запуск Flask сервера
-    
-    Заказать бота/проект - @flickTXF
-    """
-    logger = logging.getLogger('flask_server')
+def run_flask():
+    """Запуск Flask в отдельном потоке"""
     try:
         logger.info("Запуск Flask сервера...")
         app.run(
             debug=Config.FLASK_DEBUG,
             host=Config.FLASK_HOST,
             port=Config.FLASK_PORT,
-            use_reloader=False  # Отключаем reloader для избежания конфликтов
+            use_reloader=False,
+            threaded=True
         )
     except Exception as e:
-        logger.error(f"Ошибка при запуске Flask сервера: {e}")
-        raise
+        logger.error(f"Ошибка Flask: {e}")
 
 
-def run_telegram_bot():
-    """Запуск Telegram бота
-    
-    Заказать бота/проект - @flickTXF
-    """
-    logger = logging.getLogger('telegram_bot')
+async def run_telegram():
+    """Запуск Telegram бота"""
     try:
         logger.info("Запуск Telegram бота...")
-        asyncio.run(bot_main())
+        await bot_main()
     except Exception as e:
-        logger.error(f"Ошибка при запуске Telegram бота: {e}")
-        raise
-
-
-class MainApplication:
-    """Главный класс приложения для управления процессами"""
-    
-    def __init__(self):
-        self.logger = setup_logging()
-        self.flask_process = None
-        self.bot_process = None
-        self.running = False
-        
-    def signal_handler(self, signum, frame):
-        """Обработчик сигналов для корректного завершения"""
-        self.logger.info(f"Получен сигнал {signum}, завершение работы...")
-        self.stop()
-        
-    def start(self):
-        """Запуск всех компонентов приложения"""
-        try:
-            # Проверка конфигурации
-            self.logger.info("Проверка конфигурации...")
-            Config.validate_bot_token()
-            # Установка обработчиков сигналов только в основном процессе
-            signal.signal(signal.SIGINT, self.signal_handler)
-            signal.signal(signal.SIGTERM, self.signal_handler)
-            
-            self.logger.info("Запуск GetGems WebApp...")
-            self.logger.info(f"Flask сервер: {Config.FLASK_HOST}:{Config.FLASK_PORT}")
-            self.logger.info(f"Webhook URL: {Config.WEBAPP_URL}/webhook")
-            
-            self.running = True
-            
-            # Запуск Flask сервера в отдельном процессе
-            self.logger.info("Запуск Flask сервера...")
-            self.flask_process = multiprocessing.Process(target=run_flask_server)
-            self.flask_process.daemon = True
-            self.flask_process.start()
-            
-            # Небольшая задержка для запуска Flask
-            time.sleep(2)
-            
-            # Запуск Telegram бота в отдельном процессе
-            self.logger.info("Запуск Telegram бота...")
-            self.bot_process = multiprocessing.Process(target=run_telegram_bot)
-            self.bot_process.daemon = True
-            self.bot_process.start()
-            
-            self.logger.info("Все компоненты запущены успешно!")
-            
-            # Ожидание завершения процессов
-            while self.running:
-                try:
-                    # Проверяем статус процессов
-                    if self.flask_process and not self.flask_process.is_alive():
-                        self.logger.error("Flask процесс завершился с ошибкой")
-                        break
-                        
-                    if self.bot_process and not self.bot_process.is_alive():
-                        self.logger.error("Telegram бот процесс завершился с ошибкой")
-                        break
-                        
-                    # Небольшая задержка перед следующей проверкой
-                    time.sleep(1)
-                    
-                except Exception as e:
-                    self.logger.error(f"Ошибка при мониторинге процессов: {e}")
-                    break
-                    
-        except Exception as e:
-            self.logger.error(f"Ошибка при запуске приложения: {e}")
-            self.stop()
-            raise
-            
-    def monitor_processes(self):
-        """Мониторинг состояния процессов"""
-        while self.running:
-            try:
-                # Проверка Flask процесса
-                if self.flask_process and not self.flask_process.is_alive():
-                    self.logger.error("Flask сервер завершился неожиданно!")
-                    self.stop()
-                    break
-                    
-                # Проверка бот процесса
-                if self.bot_process and not self.bot_process.is_alive():
-                    self.logger.error("Telegram бот завершился неожиданно!")
-                    self.stop()
-                    break
-                    
-                time.sleep(5)  # Проверка каждые 5 секунд
-                
-            except KeyboardInterrupt:
-                self.logger.info("Получен сигнал прерывания...")
-                self.stop()
-                break
-            except Exception as e:
-                self.logger.error(f"Ошибка в мониторинге процессов: {e}")
-                
-    def stop(self):
-        """Остановка всех компонентов приложения"""
-        if not self.running:
-            return
-            
-        self.logger.info("Остановка приложения...")
-        self.running = False
-        
-        # Безопасная остановка Flask процесса
-        if self.flask_process:
-            try:
-                if self.flask_process.is_alive():
-                    self.logger.info("Остановка Flask сервера...")
-                    self.flask_process.terminate()
-                    self.flask_process.join(timeout=10)
-                    if self.flask_process.is_alive():
-                        self.logger.warning("Принудительное завершение Flask сервера...")
-                        self.flask_process.kill()
-            except Exception as e:
-                self.logger.error(f"Ошибка при остановке Flask процесса: {e}")
-                
-        # Безопасная остановка бот процесса
-        if self.bot_process:
-            try:
-                if self.bot_process.is_alive():
-                    self.logger.info("Остановка Telegram бота...")
-                    self.bot_process.terminate()
-                    self.bot_process.join(timeout=10)
-                    if self.bot_process.is_alive():
-                        self.logger.warning("Принудительное завершение Telegram бота...")
-                        self.bot_process.kill()
-            except Exception as e:
-                self.logger.error(f"Ошибка при остановке бот процесса: {e}")
-                
-        self.logger.info("Приложение остановлено")
+        logger.error(f"Ошибка Telegram бота: {e}")
+        import traceback
+        logger.error(f"Traceback: {traceback.format_exc()}")
 
 
 def main():
@@ -207,23 +61,38 @@ def main():
     if sys.version_info < (3, 8):
         print("Требуется Python 3.8 или выше!")
         sys.exit(1)
-        
-    # Поддержка multiprocessing на Windows
-    if sys.platform.startswith('win'):
-        multiprocessing.set_start_method('spawn', force=True)
-        
-    # Создание и запуск приложения
-    app_instance = MainApplication()
+    
+    logger = setup_logging()
     
     try:
-        app_instance.start()
+        logger.info("Запуск GetGems WebApp (упрощённая версия)...")
+        logger.info(f"Flask сервер: {Config.FLASK_HOST}:{Config.FLASK_PORT}")
+        logger.info(f"Webhook URL: {Config.WEBAPP_URL}/webhook")
+        
+        # Проверка конфигурации
+        if not Config.validate():
+            logger.error("Валидация конфигурации не пройдена")
+            return
+        
+        # Запуск Flask в отдельном потоке
+        flask_thread = threading.Thread(target=run_flask, daemon=True)
+        flask_thread.start()
+        
+        # Небольшая задержка для Flask
+        time.sleep(2)
+        
+        # Запуск Telegram бота в asyncio
+        try:
+            asyncio.run(run_telegram())
+        except KeyboardInterrupt:
+            logger.info("Получен сигнал прерывания...")
+        
     except KeyboardInterrupt:
-        print("\nПолучен сигнал прерывания...")
+        logger.info("Программа прервана")
     except Exception as e:
-        print(f"Критическая ошибка: {e}")
-        sys.exit(1)
-    finally:
-        app_instance.stop()
+        logger.error(f"Критическая ошибка: {e}")
+        import traceback
+        logger.error(f"Traceback: {traceback.format_exc()}")
 
 
 if __name__ == "__main__":
