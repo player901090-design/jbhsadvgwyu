@@ -96,3 +96,8 @@
     }
 </script>
 {% endblock %}
+
+{% block scripts %}
+    {{ super() }} {# Включаем скрипты из базового шаблона, если они есть #}
+    <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
+{% endblock %}
