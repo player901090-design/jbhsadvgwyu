@@ -31,6 +31,8 @@ def setup_logging():
 
 def run_flask():
     """Запуск Flask в отдельном потоке"""
+    # Локальный логгер для этой функции
+    logger = logging.getLogger("flask_server")
     try:
         logger.info("Запуск Flask сервера...")
         app.run(
@@ -46,6 +48,8 @@ def run_flask():
 
 async def run_telegram():
     """Запуск Telegram бота"""
+    # Локальный логгер для этой корутины
+    logger = logging.getLogger("telegram_bot_runner")
     try:
         logger.info("Запуск Telegram бота...")
         await bot_main()
@@ -62,7 +66,9 @@ def main():
         print("Требуется Python 3.8 или выше!")
         sys.exit(1)
     
-    logger = setup_logging()
+    # Инициализируем логирование
+    setup_logging()
+    logger = logging.getLogger(__name__)
     
     try:
         logger.info("Запуск GetGems WebApp (упрощённая версия)...")
