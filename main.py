@@ -50,7 +50,19 @@ async def run_telegram():
     logger = logging.getLogger('telegram_bot')
     try:
         logger.info("Запуск Telegram бота...")
-        await bot_main()
+        # Запускаем бота через polling локально на хостинге
+        from telegram_bot import bot, dp
+        
+        # Удаляем webhook если есть
+        await bot.delete_webhook(drop_pending_updates=True)
+        logger.info("Webhook удален, используем polling")
+        
+        # Запускаем polling
+        await dp.start_polling(
+            bot,
+            handle_signals=False  # Отключаем обработку сигналов в потоке
+        )
+        
     except Exception as e:
         logger.error(f"Ошибка при запуске Telegram бота: {e}")
 
