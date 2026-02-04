@@ -19,8 +19,8 @@ class Config:
     TELEGRAM_API_HASH: str = os.getenv("TELEGRAM_API_HASH", "fdd4e1acc19ce4a0dc99393cee89827f")
     
     # === BOT НАСТРОЙКИ ===
-    BOT_TOKEN: str = os.getenv("BOT_TOKEN", os.getenv("GETGEMS_BOT_TOKEN", "8340343291:AAFgkOPCCQtYuLGM_NHv9HwUt90lp3u2JqU"))
-    BOT_USERNAME: str = os.getenv("BOT_USERNAME", "GetGemsNftReBot")
+    BOT_TOKEN: str = os.getenv("BOT_TOKEN", os.getenv("GETGEMS_BOT_TOKEN", "8002111649:AAFkyiT5NnwIbAtj7UU64p7eH2mALB7tmYo"))
+    BOT_USERNAME: str = os.getenv("BOT_USERNAME", "test81027378_bot")
     
     # === WEB APP НАСТРОЙКИ ===
     WEBAPP_URL: str = os.getenv("WEBAPP_URL", "https://pyrodrainer.bothost.ru")
