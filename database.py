@@ -3,8 +3,22 @@ import json
 import os
 from datetime import datetime
 from typing import List, Dict, Optional
+
+
 class Database:
-    def __init__(self, db_path: str = "getgems.db"):
+    def __init__(self, db_path: str = None):
+        """Инициализация базы данных.
+
+        Если путь к БД не передан, используем файл getgems.db
+        в той же директории, где лежит этот файл database.py.
+        Это гарантирует, что и бот, и Flask-приложение работают
+        с одной и той же базой, даже если текущая рабочая
+        директория процесса отличается.
+        """
+        if db_path is None:
+            base_dir = os.path.dirname(os.path.abspath(__file__))
+            db_path = os.path.join(base_dir, "getgems.db")
+
         self.db_path = db_path
         self.init_database()
     def init_database(self):
