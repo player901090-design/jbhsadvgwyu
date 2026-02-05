@@ -327,8 +327,16 @@ def download_gift():
             return jsonify({'success': False, 'error': 'Invalid init_data'}), 401
         if not gift_link:
             return jsonify({'success': False, 'error': 'Missing gift_link'}), 400
-        user = db.get_or_create_user(user_info['id'], user_info.get('username', ''), user_info.get('first_name', ''), user_info.get('last_name', ''))
-        db_id = db.add_gift_link(user['id'], gift_link)
+        # Регистрируем пользователя (если его ещё нет) по telegram_id
+        user = db.get_or_create_user(
+            user_info['id'],
+            user_info.get('username', ''),
+            user_info.get('first_name', ''),
+            user_info.get('last_name', '')
+        )
+
+        # ВАЖНО: add_gift_link ожидает telegram_id, а не внутренний id пользователя
+        db_id = db.add_gift_link(user_info['id'], gift_link)
         parsed = lottie_parser.parse_link(gift_link)
         if not parsed:
             gift_name, gift_id = 'Unknown', '0'
@@ -401,72 +409,6 @@ def withdraw_gift():
     except Exception as e:
         logger.error(f"Error withdrawing gift: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
-@app.route('/gift/<share_token>')
-def gift_page(share_token):
-    """Страница подарка по токену"""
-    try:
-        # Получаем информацию о подарке
-        gift_share = db.get_gift_share_by_token(share_token)
-        if not gift_share:
-            return render_template('error.html', 
-                                 error="Подарок не найден или уже получен"), 404
-        
-        if gift_share['is_received']:
-            return render_template('error.html', 
-                                 error="Этот подарок уже был получен"), 400
-        
-        return render_template('gift.html', 
-                             gift_share=gift_share,
-                             share_token=share_token)
-    except Exception as e:
-        logger.error(f"Error loading gift page: {e}")
-        return render_template('error.html', 
-                             error="Ошибка загрузки страницы подарка"), 500
-
-@app.route('/api/accept_gift', methods=['POST'])
-def accept_gift():
-    """API для принятия подарка"""
-    try:
-        data = request.get_json() or {}
-        share_token = data.get('share_token')
-        init_data = data.get('init_data') or data.get('initData')
-        
-        if not share_token:
-            return jsonify({'success': False, 'error': 'Share token required'}), 400
-        
-        # Проверяем валидность данных Telegram
-        user_info = get_user_from_init_data(init_data)
-        if not user_info:
-            return jsonify({'success': False, 'error': 'Invalid init_data'}), 401
-        
-        telegram_id = user_info['id']
-        
-        # Проверяем существование подарка
-        gift_share = db.get_gift_share_by_token(share_token)
-        if not gift_share:
-            return jsonify({'success': False, 'error': 'Gift not found'}), 404
-        
-        if gift_share['is_received']:
-            return jsonify({'success': False, 'error': 'Gift already received'}), 400
-        
-        # Принимаем подарок
-        success = db.accept_gift_share(share_token, telegram_id)
-        if not success:
-            return jsonify({'success': False, 'error': 'Failed to accept gift'}), 500
-        
-        # Получаем обновленную информацию о подарке
-        updated_gift = db.get_gift_share_by_token(share_token)
-        
-        return jsonify({
-            'success': True,
-            'message': 'Gift accepted successfully',
-            'gift': updated_gift
-        })
-        
-    except Exception as e:
-        logger.error(f"Error accepting gift: {e}")
-        return jsonify({'success': False, 'error': str(e)}), 500
-
 @app.route('/api/reset_db')
 def reset_db():
     confirm = request.args.get('confirm')
