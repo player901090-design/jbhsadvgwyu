@@ -105,19 +105,33 @@ class Database:
             user = self.get_user_by_telegram_id(telegram_id)
         return user
     def add_gift_link(self, telegram_id: int, gift_link: str) -> int:
+        """Добавляет ссылку на подарок в инвентарь пользователя.
+
+        telegram_id — это telegram_id пользователя (а НЕ внутренний id из таблицы users).
+        """
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
+
+            # Находим внутренний id пользователя по telegram_id
             cursor.execute('SELECT id FROM users WHERE telegram_id = ?', (telegram_id,))
             user_row = cursor.fetchone()
             if not user_row:
-                raise ValueError(f"User with telegram_id {telegram_id} not found")
+                raise ValueError(f"User with telegram_id {telegram_id} not found in users table")
+
             user_id = user_row[0]
+
+            # Вставляем запись в gifts_links
             cursor.execute('''
                 INSERT INTO gifts_links (user_id, gift_link)
                 VALUES (?, ?)
             ''', (user_id, gift_link))
+
             gift_db_id = cursor.lastrowid
             conn.commit()
+
+            # Простейший вывод для отладки (попадёт в stdout/логи хостинга)
+            print(f"[DB] add_gift_link: telegram_id={telegram_id}, user_id={user_id}, gift_db_id={gift_db_id}, link={gift_link}")
+
             return gift_db_id
     def get_user_gifts(self, telegram_id: int) -> List[Dict]:
         with sqlite3.connect(self.db_path) as conn:
